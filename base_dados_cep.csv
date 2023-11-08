@@ -1,1 +1,5 @@
-street,complement,district,districtId,city,cityId,ibgeId,state,stateShortname,zipcode
+street,complement,district,districtId,city,cityId,ibgeId,state,stateShortname,zipcode,BaseURL
+Rua Raimundo Rocha Menezes,,Olavo Oliveira,36675,Fortaleza,2838,2304400,Ceará,CE,60350730,https://brasilaberto.com/api/v1/zipcode/60350730
+Vila Santa Helena,,Olavo Oliveira,36675,Fortaleza,2838,2304400,Ceará,CE,60350735,https://brasilaberto.com/api/v1/zipcode/60350735
+Rua Raimundo Pinheiro Bastos,,Olavo Oliveira,36675,Fortaleza,2838,2304400,Ceará,CE,60350740,https://brasilaberto.com/api/v1/zipcode/60350740
+Rua Lindolfo Freire,,Olavo Oliveira,36675,Fortaleza,2838,2304400,Ceará,CE,60350750,https://brasilaberto.com/api/v1/zipcode/60350750

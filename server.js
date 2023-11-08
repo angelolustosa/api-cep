@@ -13,10 +13,11 @@ async function consultarCEP(cep) {
     //const response = await axios.get(`${baseUrl}/${cep}/json`);
 
     url = `${baseUrl}/${cep}`
-    console.log(url);
+    //console.log(url);
     const response = await axios.get(url);
     return response.data;
   } catch (error) {
+    console.log(`\n===================== [${cep} NÃO EXISTE!] ====================`);
     console.error(`Erro ao consultar o CEP ${cep}: ${error.message}`);
     return { erro: true };
   }
@@ -26,53 +27,82 @@ async function obterCEPsNoRange(inicio, fim) {
   const baseDados = [];
   const cepsNaoEncontrados = [];
 
-  fs.writeFileSync(cepsNaoEncontradosCSV, 'CEP,BaseURL\n');
-  fs.writeFileSync(baseDadosCSV, 'street,complement,district,districtId,city,cityId,ibgeId,state,stateShortname,zipcode,BaseURL\n');
+  //fs.writeFileSync(cepsNaoEncontradosCSV, 'CEP,BaseURL\n');
+  verificarEIniciarArquivo(cepsNaoEncontradosCSV, 'CEP,BaseURL\n');
+  //fs.writeFileSync(baseDadosCSV, 'street,complement,district,districtId,city,cityId,ibgeId,state,stateShortname,zipcode,BaseURL\n');
+  verificarEIniciarArquivo(baseDadosCSV, 'street,complement,district,districtId,city,cityId,ibgeId,state,stateShortname,zipcode,BaseURL\n');
 
   for (let i = inicio; i <= fim; i++) {
     const cep = i.toString().padStart(8, '0'); // Formata o número como um CEP
+
+    const jaExisteNoCSV = await verificarCEPNoCSV(baseDadosCSV, 9, cep);
+
+    if (jaExisteNoCSV) {
+      console.log(`CEP ${cep} já existe no CSV.`);
+      continue;
+    }
 
     const endereco = await consultarCEP(cep);
 
     if (endereco.erro) {
       //cepsNaoEncontrados.push(cep);
       const csvRow = `${cep},${url}\n`;
-      saveFile(cepsNaoEncontradosCSV, csvRow,cep)
-      console.log(`CEP ${cep} não encontrado`);
+      saveFile(cepsNaoEncontradosCSV, csvRow, cep)
+      //console.log(`CEP ${cep} não encontrado`);
     } else {
+      console.log(`\n============================== [${cep} SUCESSO] =============================`);
       //baseDados.push(endereco);
       saveFile(baseDadosCSV, endereco.result, cep)
     }
   }
-
-//   // Salvar os resultados em CSV
-//   const csvHeader = Object.keys(baseDados[0]).join(',');
-
-//   const baseDadosCSVContent = baseDados.map((endereco) =>
-//     Object.values(endereco).join(',')
-//   );
-
-//   const cepsNaoEncontradosCSVContent = cepsNaoEncontrados.join('\n');
-
-//   fs.writeFileSync(baseDadosCSV, csvHeader + '\n' + baseDadosCSVContent.join('\n'));
-//   fs.writeFileSync(cepsNaoEncontradosCSV, cepsNaoEncontradosCSVContent);
-
-//   console.log('Arquivos CSV gerados com sucesso.');
 }
 
-const saveFile = async (nomeArquivo, data, cep) => {
-    
-  if(data.zipcode === cep) {
-    let rows = Object.values(data).join(',')
-    //console.log(rows);
-    fs.appendFileSync(nomeArquivo, `${rows}\n`);
-    console.log(`CEP ${data.zipcode} inserido com sucesso! em ${nomeArquivo}`);
-  } else {
-    fs.appendFileSync(nomeArquivo, data);
-    console.log(`CEP ${data.split(',')[0]} inserido com sucesso em ${nomeArquivo}!`);
+const verificarCEPNoCSV = async (nomeArquivo, posicaoCampoHeader, cep) => {
+  const csvContent = fs.readFileSync(nomeArquivo, 'utf8');
+  const lines = csvContent.split('\n').slice(1); // Ignorar o cabeçalho
+
+  for (const line of lines) {
+    const lineData = line.split(',');
+    if (lineData[posicaoCampoHeader] === cep) {
+      return true; // CEP já existe no CSV
+    }
   }
 
-  
+  return false; // CEP não existe no CSV
+}
+
+async function verificarEIniciarArquivo(nomeArquivo, header) {
+  if (!fs.existsSync(nomeArquivo)) {
+    fs.writeFileSync(nomeArquivo, header);
+  }
+}
+const saveFile = async (nomeArquivo, data, cep) => {
+
+  if (data.zipcode === cep) {
+    let rows = Object.values(data).join(',')
+    //rows.join(`,${url}`)
+
+    console.log(rows);
+
+    fs.appendFileSync(nomeArquivo, `${rows},${url}\n`);
+    console.log('')
+    console.log(`[OK] CEP ${data.zipcode} inserido com sucesso! em ${nomeArquivo}`);
+    //console.log(`\n===================== [FIM - INSERIDO NA BASE] ======================`);
+  } else {
+
+    const jaExisteNoCSV = await verificarCEPNoCSV(cepsNaoEncontradosCSV, 0, cep);
+
+    if (jaExisteNoCSV) {
+      console.log(`CEP ${cep} já existe no CSV.`);
+    } else {
+      fs.appendFileSync(nomeArquivo, data);
+      console.log(`[NOT_FOUND] CEP ${data.split(',')[0]} inserido com sucesso em ${nomeArquivo}!`);
+      //console.log('\n========================== [${cep} IGNORADO] ========================== ');
+    }
+
+  }
+
+
 }
 
 // Obtém os argumentos de início e fim do intervalo da linha de comando
